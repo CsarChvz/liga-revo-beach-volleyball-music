@@ -5,7 +5,13 @@ import type { AudioTrack, PlaylistCategory } from '../types/audio';
  * using Vite's import.meta.glob feature.
  */
 export class FolderScannerService {
+  private static cachedTracks: AudioTrack[] | null = null;
+
   public static scanAudioFolders(): AudioTrack[] {
+    if (this.cachedTracks) {
+      return this.cachedTracks;
+    }
+
     const tracks: AudioTrack[] = [];
 
     try {
@@ -69,6 +75,7 @@ export class FolderScannerService {
       console.warn('Error scanning audio folders:', e);
     }
 
+    this.cachedTracks = tracks;
     return tracks;
   }
 }

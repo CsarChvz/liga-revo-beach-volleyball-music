@@ -11,7 +11,7 @@ interface HeaderProps {
   activeTrackTitle: string | null;
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export const Header: React.FC<HeaderProps> = React.memo(({
   masterVolume,
   onVolumeChange,
   onEmergencyStop,
@@ -126,4 +126,4 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
     </header>
   );
-};
+});

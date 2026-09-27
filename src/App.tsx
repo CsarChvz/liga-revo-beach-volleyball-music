@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { useHotkeys } from './hooks/useHotkeys';
 import { Header } from './components/Header';
@@ -29,6 +29,11 @@ export function App() {
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
 
+  const handleOpenPlaylistManager = useCallback(() => setIsPlaylistModalOpen(true), []);
+  const handleClosePlaylistManager = useCallback(() => setIsPlaylistModalOpen(false), []);
+  const handleOpenHotkeyGuide = useCallback(() => setIsHotkeyModalOpen(true), []);
+  const handleCloseHotkeyGuide = useCallback(() => setIsHotkeyModalOpen(false), []);
+
   // Hotkeys registration
   useHotkeys({
     onPointIntro: playNextPointIntro,
@@ -50,8 +55,8 @@ export function App() {
         masterVolume={masterVolume}
         onVolumeChange={setMasterVolume}
         onEmergencyStop={emergencyStop}
-        onOpenPlaylistManager={() => setIsPlaylistModalOpen(true)}
-        onOpenHotkeyGuide={() => setIsHotkeyModalOpen(true)}
+        onOpenPlaylistManager={handleOpenPlaylistManager}
+        onOpenHotkeyGuide={handleOpenHotkeyGuide}
         isFading={playingState.isFading}
         activeTrackTitle={playingState.trackTitle}
       />
@@ -188,7 +193,7 @@ export function App() {
       {/* Modals */}
       <PlaylistManagerModal
         isOpen={isPlaylistModalOpen}
-        onClose={() => setIsPlaylistModalOpen(false)}
+        onClose={handleClosePlaylistManager}
         playlists={playlists}
         onAddTrack={addTrackToCategory}
         onRemoveTrack={removeTrackFromCategory}
@@ -196,7 +201,7 @@ export function App() {
 
       <HotkeyGuideModal
         isOpen={isHotkeyModalOpen}
-        onClose={() => setIsHotkeyModalOpen(false)}
+        onClose={handleCloseHotkeyGuide}
       />
 
     </div>

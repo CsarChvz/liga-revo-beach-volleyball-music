@@ -14,6 +14,8 @@ export class AudioEngineService {
   private totalStopTimer: number | null = null;
   private progressInterval: number | null = null;
 
+  private audioPool: Map<string, HTMLAudioElement> = new Map();
+
   // State
   private state: PlayingState = {
     trackId: null,
@@ -38,6 +40,20 @@ export class AudioEngineService {
 
   private notify(): void {
     this.listeners.forEach((fn) => fn({ ...this.state }));
+  }
+
+  /**
+   * Pre-load an audio URL into memory pool for instant zero-latency playback
+   */
+  public preloadAudio(url: string): void {
+    if (!url || this.audioPool.has(url)) return;
+    try {
+      const audio = new Audio(url);
+      audio.preload = 'auto';
+      this.audioPool.set(url, audio);
+    } catch (e) {
+      console.warn('Failed to preload audio:', url, e);
+    }
   }
 
   public setMasterVolume(vol: number): void {
@@ -178,10 +194,21 @@ export class AudioEngineService {
   }
 
   /**
-   * HTML5 Audio Player (Local MP3/WAV)
+   * HTML5 Audio Player (Local MP3/WAV with Instant Cache Reuse)
    */
   private playLocalAudio(url: string): void {
-    const audio = new Audio(url);
+    let audio = this.audioPool.get(url);
+    if (!audio) {
+      audio = new Audio(url);
+      audio.preload = 'auto';
+      this.audioPool.set(url, audio);
+    } else {
+      try {
+        audio.currentTime = 0;
+      } catch (e) {
+        console.warn(e);
+      }
+    }
     audio.volume = this.masterVolume;
     this.currentHtmlAudio = audio;
     audio.onended = () => {

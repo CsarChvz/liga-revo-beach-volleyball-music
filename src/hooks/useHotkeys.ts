@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface HotkeyHandlers {
   onPointIntro: () => void;
@@ -10,15 +10,10 @@ interface HotkeyHandlers {
   onEmergencyStop: () => void;
 }
 
-export function useHotkeys({
-  onPointIntro,
-  onSuperSpike,
-  onMonsterBlock,
-  onTechnicalTimeout,
-  onPresentationPlay,
-  onPresentationTransition,
-  onEmergencyStop,
-}: HotkeyHandlers) {
+export function useHotkeys(handlers: HotkeyHandlers) {
+  const handlersRef = useRef(handlers);
+  handlersRef.current = handlers;
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ignore key events when typing inside input elements or textareas
@@ -33,32 +28,32 @@ export function useHotkeys({
       switch (event.code) {
         case 'Space':
           event.preventDefault();
-          onPointIntro();
+          handlersRef.current.onPointIntro();
           break;
         case 'KeyQ':
           event.preventDefault();
-          onSuperSpike();
+          handlersRef.current.onSuperSpike();
           break;
         case 'KeyW':
           event.preventDefault();
-          onMonsterBlock();
+          handlersRef.current.onMonsterBlock();
           break;
         case 'KeyE':
           event.preventDefault();
-          onTechnicalTimeout();
+          handlersRef.current.onTechnicalTimeout();
           break;
         case 'KeyP':
           event.preventDefault();
-          onPresentationPlay();
+          handlersRef.current.onPresentationPlay();
           break;
         case 'KeyT':
           event.preventDefault();
-          onPresentationTransition();
+          handlersRef.current.onPresentationTransition();
           break;
         case 'Escape':
         case 'KeyS':
           event.preventDefault();
-          onEmergencyStop();
+          handlersRef.current.onEmergencyStop();
           break;
         default:
           break;
@@ -67,13 +62,5 @@ export function useHotkeys({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    onPointIntro,
-    onSuperSpike,
-    onMonsterBlock,
-    onTechnicalTimeout,
-    onPresentationPlay,
-    onPresentationTransition,
-    onEmergencyStop,
-  ]);
+  }, []);
 }

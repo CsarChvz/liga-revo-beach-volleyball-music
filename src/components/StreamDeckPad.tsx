@@ -219,4 +219,37 @@ const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
   );
 };
 
-export const StreamDeckPad = React.memo(StreamDeckPadComponent);
+export const StreamDeckPad = React.memo(StreamDeckPadComponent, (prev, next) => {
+  if (
+    prev.hotkeyLabel !== next.hotkeyLabel ||
+    prev.padTheme !== next.padTheme ||
+    prev.subtitleInfo !== next.subtitleInfo
+  ) {
+    return false;
+  }
+
+  const prevCat = prev.categoryState;
+  const nextCat = next.categoryState;
+  if (
+    prevCat.category !== nextCat.category ||
+    prevCat.name !== nextCat.name ||
+    prevCat.currentIndex !== nextCat.currentIndex ||
+    prevCat.tracks.length !== nextCat.tracks.length ||
+    prevCat.tracks !== nextCat.tracks
+  ) {
+    return false;
+  }
+
+  const prevIsActive = prev.playingState.category === prevCat.category && prev.playingState.isPlaying;
+  const nextIsActive = next.playingState.category === nextCat.category && next.playingState.isPlaying;
+  if (prevIsActive !== nextIsActive) {
+    return false;
+  }
+
+  return (
+    prev.onTriggerPlay === next.onTriggerPlay &&
+    prev.onSelectTrackIndex === next.onSelectTrackIndex &&
+    prev.onReorderTrack === next.onReorderTrack &&
+    prev.onRemoveTrack === next.onRemoveTrack
+  );
+});
