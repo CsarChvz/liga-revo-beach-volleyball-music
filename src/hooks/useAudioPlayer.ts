@@ -1,0 +1,207 @@
+import { useState, useEffect, useCallback } from 'react';
+import type { AudioTrack, PlayingState, PlaylistCategory, PlaylistMap } from '../types/audio';
+import { audioEngine } from '../services/audioEngine';
+import { StorageService } from '../services/storageService';
+
+export function useAudioPlayer() {
+  const [playlists, setPlaylists] = useState<PlaylistMap>(() => StorageService.loadPlaylistsSync());
+  const [playingState, setPlayingState] = useState<PlayingState>(() => audioEngine.getCurrentState());
+  const [masterVolume, setMasterVolumeState] = useState<number>(() => audioEngine.getMasterVolume());
+
+  // Async load stored tracks from IndexedDB
+  useEffect(() => {
+    StorageService.loadPlaylistsAsync().then((loadedPlaylists) => {
+      setPlaylists(loadedPlaylists);
+    });
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = audioEngine.subscribe((newState) => {
+      setPlayingState(newState);
+    });
+    return unsubscribe;
+  }, []);
+
+  const setMasterVolume = useCallback((vol: number) => {
+    audioEngine.setMasterVolume(vol);
+    setMasterVolumeState(vol);
+  }, []);
+
+  /**
+   * Helper to play the current active track of a category playlist,
+   * then advance the index for the next call!
+   */
+  const playCategoryPlaylist = useCallback(
+    (category: PlaylistCategory) => {
+      const pl = playlists[category];
+      if (!pl || pl.tracks.length === 0) return;
+
+      const trackToPlay = pl.tracks[pl.currentIndex] || pl.tracks[0];
+      audioEngine.playTrack(trackToPlay);
+
+      // Advance index according to playMode
+      setPlaylists((prev) => {
+        const currentPl = prev[category];
+        if (!currentPl || currentPl.tracks.length === 0) return prev;
+
+        let nextIdx = currentPl.currentIndex;
+        if (currentPl.playMode === 'sequential') {
+          nextIdx = (currentPl.currentIndex + 1) % currentPl.tracks.length;
+        } else if (currentPl.playMode === 'random') {
+          nextIdx = Math.floor(Math.random() * currentPl.tracks.length);
+        }
+
+        const updated: PlaylistMap = {
+          ...prev,
+          [category]: {
+            ...currentPl,
+            currentIndex: nextIdx,
+          },
+        };
+        StorageService.savePlaylists(updated);
+        return updated;
+      });
+    },
+    [playlists]
+  );
+
+  const selectNextTrackIndex = useCallback((category: PlaylistCategory, index: number) => {
+    setPlaylists((prev) => {
+      const pl = prev[category];
+      if (!pl || index < 0 || index >= pl.tracks.length) return prev;
+      const updated: PlaylistMap = {
+        ...prev,
+        [category]: {
+          ...pl,
+          currentIndex: index,
+        },
+      };
+      StorageService.savePlaylists(updated);
+      return updated;
+    });
+  }, []);
+
+  const reorderTracks = useCallback(
+    (category: PlaylistCategory, fromIndex: number, toIndex: number) => {
+      setPlaylists((prev) => {
+        const pl = prev[category];
+        if (!pl || fromIndex < 0 || toIndex < 0 || fromIndex >= pl.tracks.length || toIndex >= pl.tracks.length) {
+          return prev;
+        }
+
+        const newTracks = [...pl.tracks];
+        const [moved] = newTracks.splice(fromIndex, 1);
+        newTracks.splice(toIndex, 0, moved);
+
+        const updated: PlaylistMap = {
+          ...prev,
+          [category]: {
+            ...pl,
+            tracks: newTracks,
+            currentIndex: 0,
+          },
+        };
+        StorageService.savePlaylists(updated);
+        return updated;
+      });
+    },
+    []
+  );
+
+  const playNextPointIntro = useCallback(() => {
+    playCategoryPlaylist('point_intros');
+  }, [playCategoryPlaylist]);
+
+  const playSuperSpike = useCallback(() => {
+    playCategoryPlaylist('super_spike');
+  }, [playCategoryPlaylist]);
+
+  const playMonsterBlock = useCallback(() => {
+    playCategoryPlaylist('monster_block');
+  }, [playCategoryPlaylist]);
+
+  const playTechnicalTimeout = useCallback(() => {
+    playCategoryPlaylist('technical_timeouts');
+  }, [playCategoryPlaylist]);
+
+  const playPresentation = useCallback(() => {
+    playCategoryPlaylist('presentation');
+  }, [playCategoryPlaylist]);
+
+  const transitionOutPresentation = useCallback(() => {
+    audioEngine.transitionOutPresentation(3000);
+  }, []);
+
+  const emergencyStop = useCallback(() => {
+    audioEngine.emergencyStop();
+  }, []);
+
+  const addTrackToCategory = useCallback((newTrack: AudioTrack, fileObject?: File) => {
+    setPlaylists((prev) => {
+      const cat = newTrack.category;
+      const pl = prev[cat];
+      if (!pl) return prev;
+
+      const updated: PlaylistMap = {
+        ...prev,
+        [cat]: {
+          ...pl,
+          tracks: [...pl.tracks, newTrack],
+        },
+      };
+      StorageService.savePlaylists(updated);
+      return updated;
+    });
+
+    if (fileObject) {
+      StorageService.saveUploadedFile(
+        newTrack.id,
+        fileObject,
+        newTrack.title,
+        newTrack.artist || '',
+        newTrack.category,
+        newTrack.duration || 12
+      );
+    }
+  }, []);
+
+  const removeTrackFromCategory = useCallback((category: PlaylistCategory, trackId: string) => {
+    setPlaylists((prev) => {
+      const pl = prev[category];
+      if (!pl) return prev;
+
+      const updated: PlaylistMap = {
+        ...prev,
+        [category]: {
+          ...pl,
+          tracks: pl.tracks.filter((t) => t.id !== trackId),
+          currentIndex: 0,
+        },
+      };
+      StorageService.savePlaylists(updated);
+      return updated;
+    });
+
+    StorageService.deleteUploadedFile(trackId);
+  }, []);
+
+  return {
+    playlists,
+    playingState,
+    masterVolume,
+    setMasterVolume,
+    playTrack: (track: AudioTrack) => audioEngine.playTrack(track),
+    playCategoryPlaylist,
+    selectNextTrackIndex,
+    reorderTracks,
+    playNextPointIntro,
+    playSuperSpike,
+    playMonsterBlock,
+    playTechnicalTimeout,
+    playPresentation,
+    transitionOutPresentation,
+    emergencyStop,
+    addTrackToCategory,
+    removeTrackFromCategory,
+  };
+}
