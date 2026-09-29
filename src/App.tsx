@@ -5,7 +5,7 @@ import { Header } from './components/Header';
 import { StreamDeckPad } from './components/StreamDeckPad';
 import { PlaylistManagerModal } from './components/PlaylistManagerModal';
 import { HotkeyGuideModal } from './components/HotkeyGuideModal';
-import { ShieldCheck, FastForward, Square } from 'lucide-react';
+import { ShieldCheck, Square } from 'lucide-react';
 
 export function App() {
   const {
@@ -18,12 +18,16 @@ export function App() {
     playNextPointIntro,
     playSuperSpike,
     playMonsterBlock,
+    playAce,
     playTechnicalTimeout,
     playPresentation,
     transitionOutPresentation,
     emergencyStop,
     addTrackToCategory,
     removeTrackFromCategory,
+    specialMode,
+    toggleTimeoutContinuous,
+    toggleAwardsLoop,
   } = useAudioPlayer();
 
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
@@ -39,13 +43,14 @@ export function App() {
     onPointIntro: playNextPointIntro,
     onSuperSpike: playSuperSpike,
     onMonsterBlock: playMonsterBlock,
+    onAce: playAce,
     onTechnicalTimeout: playTechnicalTimeout,
     onPresentationPlay: playPresentation,
     onPresentationTransition: transitionOutPresentation,
+    onToggleTimeoutContinuous: toggleTimeoutContinuous,
+    onToggleAwardsLoop: toggleAwardsLoop,
     onEmergencyStop: emergencyStop,
   });
-
-  const isPresentationActive = playingState.category === 'presentation' && playingState.isPlaying;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
@@ -72,74 +77,24 @@ export function App() {
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <h2 className="text-lg font-black text-white tracking-wider uppercase flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-              CONSOLA VOLLEY STREAM DECK (5 PLAYLISTS CON SELECTOR)
+              CONSOLA VOLLEY STREAM DECK (5 BOTONES PRINCIPALES)
             </h2>
             <span className="text-xs font-mono font-bold bg-slate-950 text-slate-400 px-3 py-1 rounded-lg border border-slate-800">
               CERO SUPERPOSICIÓN DE AUDIO
             </span>
           </div>
 
-          {/* STREAM DECK KEYPAD GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            {/* Stream Deck Pad 1: Presentación & Calentamiento */}
-            <div className="flex flex-col space-y-3">
-              <StreamDeckPad
-                categoryState={playlists.presentation}
-                playingState={playingState}
-                hotkeyLabel="P"
-                padTheme="sky"
-                onTriggerPlay={playPresentation}
-                onSelectTrackIndex={selectNextTrackIndex}
-                onReorderTrack={reorderTracks}
-                onRemoveTrack={removeTrackFromCategory}
-                subtitleInfo="Música Continua Pre-Partido"
-              />
+          {/* STREAM DECK KEYPAD GRID: 2 FILAS x 3 COLUMNAS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-              {/* Transition Out Button for Presentation */}
-              <button
-                onClick={transitionOutPresentation}
-                disabled={!isPresentationActive}
-                className={`w-full py-3 px-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center space-x-2 border shadow-md ${
-                  playingState.isFading && isPresentationActive
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 ring-4 ring-amber-500/30 animate-pulse'
-                    : isPresentationActive
-                    ? 'bg-amber-600 hover:bg-amber-500 text-white border-amber-500/30 cursor-pointer'
-                    : 'bg-slate-950 text-slate-500 border-slate-800 cursor-not-allowed'
-                }`}
-              >
-                {playingState.isFading && isPresentationActive ? (
-                  <FastForward className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Square className="w-4 h-4" />
-                )}
-                <span>
-                  {playingState.isFading && isPresentationActive
-                    ? `FADING 3S (${playingState.fadeTimeRemaining.toFixed(1)}s)`
-                    : 'TRANSICIÓN A JUEGO [T] (FADE 3S)'}
-                </span>
-              </button>
-            </div>
-
-            {/* Stream Deck Pad 2: Entrepuntos 12s */}
-            <StreamDeckPad
-              categoryState={playlists.point_intros}
-              playingState={playingState}
-              hotkeyLabel="ESPACIO"
-              padTheme="amber"
-              onTriggerPlay={playNextPointIntro}
-              onSelectTrackIndex={selectNextTrackIndex}
-              onReorderTrack={reorderTracks}
-              onRemoveTrack={removeTrackFromCategory}
-              subtitleInfo="9s Play + 3s Fade Auto"
-            />
-
-            {/* Stream Deck Pad 3: Tiempo Técnico 1 min */}
+            {/* Pad 1: TECHNICAL TIME-OUT */}
             <StreamDeckPad
               categoryState={playlists.technical_timeouts}
               playingState={playingState}
               hotkeyLabel="E"
-              padTheme="emerald"
+              padTheme="green"
+              padLabel="TECHNICAL TIME-OUT"
+              mode="trigger"
               onTriggerPlay={playTechnicalTimeout}
               onSelectTrackIndex={selectNextTrackIndex}
               onReorderTrack={reorderTracks}
@@ -147,32 +102,123 @@ export function App() {
               subtitleInfo="50s Play + 10s Fade Auto"
             />
 
-            {/* Stream Deck Pad 4: Super Spike */}
+            {/* Pad 2: INTRO (Presentación & Calentamiento) */}
             <StreamDeckPad
-              categoryState={playlists.super_spike}
+              categoryState={playlists.presentation}
               playingState={playingState}
-              hotkeyLabel="Q"
-              padTheme="rose"
-              onTriggerPlay={playSuperSpike}
+              hotkeyLabel="P"
+              padTheme="sky"
+              padLabel="INTRO"
+              mode="trigger"
+              onTriggerPlay={playPresentation}
+              onSelectTrackIndex={selectNextTrackIndex}
+              onReorderTrack={reorderTracks}
+              onRemoveTrack={removeTrackFromCategory}
+              subtitleInfo="Música Continua Pre-Partido"
+            />
+
+            {/* Pad 3: BREAKS (Entrepuntos 12s) */}
+            <StreamDeckPad
+              categoryState={playlists.point_intros}
+              playingState={playingState}
+              hotkeyLabel="ESPACIO"
+              padTheme="orange"
+              padLabel="BREAKS"
+              mode="trigger"
+              onTriggerPlay={playNextPointIntro}
               onSelectTrackIndex={selectNextTrackIndex}
               onReorderTrack={reorderTracks}
               onRemoveTrack={removeTrackFromCategory}
               subtitleInfo="9s Play + 3s Fade Auto"
             />
 
-            {/* Stream Deck Pad 5: Monster Block */}
+            {/* Pad 4: TIME-OUT (Reproducción Continua, Toggle ON/OFF) */}
             <StreamDeckPad
-              categoryState={playlists.monster_block}
+              categoryState={playlists.timeout_continuous}
               playingState={playingState}
-              hotkeyLabel="W"
+              hotkeyLabel="1"
               padTheme="purple"
-              onTriggerPlay={playMonsterBlock}
+              padLabel="TIME-OUT"
+              mode="continuous"
+              isToggleActive={specialMode === 'timeout_continuous'}
+              onTriggerPlay={toggleTimeoutContinuous}
               onSelectTrackIndex={selectNextTrackIndex}
               onReorderTrack={reorderTracks}
               onRemoveTrack={removeTrackFromCategory}
-              subtitleInfo="9s Play + 3s Fade Auto"
             />
 
+            {/* Pad 5: AWARDS (Bucle Infinito, Toggle ON/OFF) */}
+            <StreamDeckPad
+              categoryState={playlists.awards}
+              playingState={playingState}
+              hotkeyLabel="A"
+              padTheme="emerald"
+              padLabel="AWARDS"
+              mode="loop"
+              isToggleActive={specialMode === 'awards'}
+              onTriggerPlay={toggleAwardsLoop}
+              onSelectTrackIndex={selectNextTrackIndex}
+              onReorderTrack={reorderTracks}
+              onRemoveTrack={removeTrackFromCategory}
+            />
+
+          </div>
+
+          {/* JINGLES ADICIONALES (OPCIONAL) */}
+          <div className="border-t border-slate-800 pt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-slate-400 tracking-wider uppercase flex items-center gap-2">
+                <Square className="w-3 h-3 text-slate-600" />
+                JINGLES ADICIONALES (OPCIONAL)
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Super Spike */}
+              <StreamDeckPad
+                categoryState={playlists.super_spike}
+                playingState={playingState}
+                hotkeyLabel="Q"
+                padTheme="rose"
+                padLabel="SUPER SPIKE"
+                mode="trigger"
+                onTriggerPlay={playSuperSpike}
+                onSelectTrackIndex={selectNextTrackIndex}
+                onReorderTrack={reorderTracks}
+                onRemoveTrack={removeTrackFromCategory}
+                subtitleInfo="9s Play + 3s Fade Auto"
+              />
+
+              {/* Monster Block */}
+              <StreamDeckPad
+                categoryState={playlists.monster_block}
+                playingState={playingState}
+                hotkeyLabel="W"
+                padTheme="purple"
+                padLabel="MONSTER BLOCK"
+                mode="trigger"
+                onTriggerPlay={playMonsterBlock}
+                onSelectTrackIndex={selectNextTrackIndex}
+                onReorderTrack={reorderTracks}
+                onRemoveTrack={removeTrackFromCategory}
+                subtitleInfo="9s Play + 3s Fade Auto"
+              />
+
+              {/* Ace */}
+              <StreamDeckPad
+                categoryState={playlists.ace}
+                playingState={playingState}
+                hotkeyLabel="R"
+                padTheme="amber"
+                padLabel="ACE"
+                mode="trigger"
+                onTriggerPlay={playAce}
+                onSelectTrackIndex={selectNextTrackIndex}
+                onReorderTrack={reorderTracks}
+                onRemoveTrack={removeTrackFromCategory}
+                subtitleInfo="9s Play + 3s Fade Auto"
+              />
+            </div>
           </div>
 
         </div>

@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
-import { Play, Disc, ArrowUp, ArrowDown, Trash2, ListMusic, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, Disc, ArrowUp, ArrowDown, Trash2, ListMusic, ChevronDown, ChevronUp, Repeat, Infinity as InfinityIcon } from 'lucide-react';
 import type { CategoryPlaylistState, PlayingState, PlaylistCategory, AudioTrack } from '../types/audio';
 
 interface StreamDeckPadProps {
   categoryState: CategoryPlaylistState;
   playingState: PlayingState;
   hotkeyLabel: string;
-  padTheme: 'sky' | 'amber' | 'emerald' | 'rose' | 'purple';
+  padTheme: 'sky' | 'amber' | 'emerald' | 'rose' | 'purple' | 'green' | 'orange';
+  /** 'trigger' = one-shot play & advance (default). 'continuous' = toggle auto-advance whole playlist. 'loop' = toggle infinite loop of active track. */
+  mode?: 'trigger' | 'continuous' | 'loop';
+  /** Big, prominent label for the pad (e.g. "TECHNICAL TIME-OUT"), shown above the OLED screen. */
+  padLabel: string;
+  /** For 'continuous'/'loop' modes: whether the toggle is currently ON. */
+  isToggleActive?: boolean;
   onTriggerPlay: () => void;
   onSelectTrackIndex: (category: PlaylistCategory, index: number) => void;
   onReorderTrack: (category: PlaylistCategory, fromIdx: number, toIdx: number) => void;
@@ -14,11 +20,28 @@ interface StreamDeckPadProps {
   subtitleInfo?: string;
 }
 
+function formatElapsed(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatElapsedLong(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins} min ${secs.toString().padStart(2, '0')} s`;
+}
+
 const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
   categoryState,
   playingState,
   hotkeyLabel,
   padTheme,
+  mode = 'trigger',
+  padLabel,
+  isToggleActive = false,
   onTriggerPlay,
   onSelectTrackIndex,
   onReorderTrack,
@@ -29,8 +52,16 @@ const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
   const isActive = playingState.category === categoryState.category && playingState.isPlaying;
-  const currentTrack: AudioTrack | undefined = categoryState.tracks[categoryState.currentIndex] || categoryState.tracks[0];
-  const nextTrack: AudioTrack | undefined = categoryState.tracks[(categoryState.currentIndex + 1) % categoryState.tracks.length];
+
+  // NOTE: categoryState.currentIndex already points to the NEXT track to play (it's advanced
+  // the moment playback starts), so while a track is actively playing we must resolve the
+  // real "now playing" track via playingState.trackId instead of currentIndex directly.
+  const tracks = categoryState.tracks;
+  const playingIdx = isActive ? tracks.findIndex((t) => t.id === playingState.trackId) : -1;
+  const displayIndex = playingIdx >= 0 ? playingIdx : categoryState.currentIndex;
+  const currentTrack: AudioTrack | undefined = tracks[displayIndex] || tracks[0];
+  const nextIndex = playingIdx >= 0 ? categoryState.currentIndex : (tracks.length > 0 ? (categoryState.currentIndex + 1) % tracks.length : 0);
+  const nextTrack: AudioTrack | undefined = tracks.length > 1 ? tracks[nextIndex] : undefined;
 
   // Theme color presets
   const themeClasses = {
@@ -74,6 +105,22 @@ const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
       badgeBg: 'bg-purple-950 text-purple-300 border-purple-500/30',
       activeBg: 'bg-purple-500/20 text-purple-200 border-purple-500/60',
     },
+    green: {
+      border: 'border-green-500/50',
+      activeRing: 'ring-4 ring-green-400 shadow-green-500/50',
+      btnBg: 'bg-gradient-to-br from-green-500 to-emerald-700 hover:from-green-400 hover:to-emerald-600 text-slate-950',
+      textAccent: 'text-green-400',
+      badgeBg: 'bg-green-950 text-green-300 border-green-500/30',
+      activeBg: 'bg-green-500/20 text-green-200 border-green-500/60',
+    },
+    orange: {
+      border: 'border-orange-500/50',
+      activeRing: 'ring-4 ring-orange-400 shadow-orange-500/50',
+      btnBg: 'bg-gradient-to-br from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-slate-950',
+      textAccent: 'text-orange-400',
+      badgeBg: 'bg-orange-950 text-orange-300 border-orange-500/30',
+      activeBg: 'bg-orange-500/20 text-orange-200 border-orange-500/60',
+    },
   }[padTheme];
 
   const handleDragStart = (idx: number) => {
@@ -98,8 +145,8 @@ const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
             <span className={`text-[11px] font-mono font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${themeClasses.badgeBg}`}>
               [{hotkeyLabel}]
             </span>
-            <span className="text-xs font-bold text-slate-300 tracking-wide">
-              {categoryState.name}
+            <span className={`text-sm font-black uppercase tracking-wider ${themeClasses.textAccent}`}>
+              {padLabel}
             </span>
           </div>
 
@@ -116,24 +163,78 @@ const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
 
         {/* OLED Display Screen Box inside key */}
         <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 mb-4 shadow-inner">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono mb-1">
-            <span className="uppercase text-[10px] font-bold tracking-widest text-slate-500">
-              PISTA ACTUAL (#{(categoryState.currentIndex + 1)})
-            </span>
-            {subtitleInfo && <span className={themeClasses.textAccent}>{subtitleInfo}</span>}
-          </div>
+          {mode === 'continuous' ? (
+            <>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono mb-1">
+                <span className="uppercase text-[10px] font-bold tracking-widest text-slate-500">LISTA DE REPRODUCCIÓN</span>
+                {subtitleInfo && <span className={themeClasses.textAccent}>{subtitleInfo}</span>}
+              </div>
+              <div className="text-base sm:text-lg font-black text-white truncate flex items-center gap-2">
+                <Repeat className={`w-4 h-4 ${isToggleActive ? 'animate-spin ' + themeClasses.textAccent : 'text-slate-600'}`} />
+                <span>{categoryState.tracks.length > 0 ? 'Completa' : 'Sin pistas asignadas'}</span>
+              </div>
+              <div className="mt-2 text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800/80 flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-bold uppercase">ESTADO:</span>
+                <span className={`font-semibold truncate max-w-[180px] ${isToggleActive ? themeClasses.textAccent : 'text-slate-300'}`}>
+                  {isToggleActive ? 'Reproducción Continua' : 'Detenido'}
+                </span>
+              </div>
+              <div className="mt-2 text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800/80 flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-bold uppercase">SIGUIENTE CANCIÓN:</span>
+                <span className="font-semibold text-slate-300">[Automático]</span>
+              </div>
+            </>
+          ) : mode === 'loop' ? (
+            <>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono mb-1">
+                <span className="uppercase text-[10px] font-bold tracking-widest text-slate-500">PISTA</span>
+                {subtitleInfo && <span className={themeClasses.textAccent}>{subtitleInfo}</span>}
+              </div>
+              <div className="text-base sm:text-lg font-black text-white truncate flex items-center gap-2">
+                <InfinityIcon className={`w-4 h-4 ${isToggleActive ? 'animate-pulse ' + themeClasses.textAccent : 'text-slate-600'}`} />
+                <span>{currentTrack ? currentTrack.title : 'Sin pistas asignadas'}</span>
+              </div>
+              <div className="mt-2 text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800/80 flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-bold uppercase">ESTADO:</span>
+                <span className={`font-semibold truncate max-w-[180px] ${isToggleActive ? themeClasses.textAccent : 'text-slate-300'}`}>
+                  {isToggleActive ? 'BUCLE INFINITO' : 'Detenido'}
+                </span>
+              </div>
+              <div className="mt-2 text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800/80 flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-bold uppercase">TIEMPO TRANSCURRIDO:</span>
+                <span className="font-semibold text-slate-300">
+                  {isToggleActive ? formatElapsedLong(playingState.currentTime) : '0 min 00 s'}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono mb-1">
+                <span className="uppercase text-[10px] font-bold tracking-widest text-slate-500">
+                  PISTA ACTUAL ({tracks.length > 0 ? displayIndex + 1 : 0}/{tracks.length})
+                </span>
+                {subtitleInfo && <span className={themeClasses.textAccent}>{subtitleInfo}</span>}
+              </div>
 
-          <div className="text-sm font-black text-white truncate flex items-center gap-2">
-            <Disc className={`w-4 h-4 ${isActive ? 'animate-spin ' + themeClasses.textAccent : 'text-slate-600'}`} />
-            <span>{currentTrack ? currentTrack.title : 'Sin pistas asignadas'}</span>
-          </div>
+              <div className="text-base sm:text-lg font-black text-white truncate flex items-center gap-2">
+                <Disc className={`w-4 h-4 ${isActive ? 'animate-spin ' + themeClasses.textAccent : 'text-slate-600'}`} />
+                <span>{currentTrack ? currentTrack.title : 'Sin pistas asignadas'}</span>
+              </div>
 
-          {/* Next Track Preview Indicator */}
-          {nextTrack && categoryState.tracks.length > 1 && (
-            <div className="mt-2 text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800/80 flex items-center justify-between">
-              <span className="text-[10px] text-slate-500 font-bold uppercase">SIGUIENTE:</span>
-              <span className="font-semibold text-slate-300 truncate max-w-[180px]">{nextTrack.title}</span>
-            </div>
+              {isActive && (
+                <div className={`mt-1 text-[11px] font-mono font-bold ${themeClasses.textAccent}`}>
+                  REPRODUCIENDO {formatElapsed(playingState.currentTime)}
+                </div>
+              )}
+
+              {/* Next Track Preview Indicator */}
+              {nextTrack && categoryState.tracks.length > 1 && (
+                <div className="mt-2 text-[11px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800/80 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">SIGUIENTE:</span>
+                  <span className="font-semibold text-slate-300 truncate max-w-[180px]">{nextTrack.title}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -206,13 +307,23 @@ const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
       <button
         onClick={onTriggerPlay}
         className={`w-full py-4 sm:py-5 px-6 rounded-2xl font-black text-base sm:text-lg tracking-wider uppercase transition-all transform active:scale-95 shadow-xl flex items-center justify-center space-x-3 ${
-          isActive
+          isActive || isToggleActive
             ? `${themeClasses.btnBg} ${themeClasses.activeRing} animate-pulse`
             : `${themeClasses.btnBg} shadow-lg`
         }`}
       >
-        <Play className="w-6 h-6 fill-current" />
-        <span>DISPARAR [{hotkeyLabel}]</span>
+        {mode === 'continuous' || mode === 'loop' ? (
+          isToggleActive ? <Play className="w-6 h-6 fill-current" /> : <Repeat className="w-6 h-6" />
+        ) : (
+          <Play className="w-6 h-6 fill-current" />
+        )}
+        <span>
+          {mode === 'continuous'
+            ? `${isToggleActive ? 'REPRODUCIENDO' : 'ACTIVAR REPRODUCCIÓN'} [${hotkeyLabel}]`
+            : mode === 'loop'
+            ? `${isToggleActive ? 'REPRODUCIENDO' : 'ACTIVAR BUCLE'} [${hotkeyLabel}]`
+            : `${isActive ? 'REPRODUCIENDO' : 'DISPARAR'} [${hotkeyLabel}]`}
+        </span>
       </button>
 
     </div>
@@ -223,7 +334,10 @@ export const StreamDeckPad = React.memo(StreamDeckPadComponent, (prev, next) => 
   if (
     prev.hotkeyLabel !== next.hotkeyLabel ||
     prev.padTheme !== next.padTheme ||
-    prev.subtitleInfo !== next.subtitleInfo
+    prev.subtitleInfo !== next.subtitleInfo ||
+    prev.mode !== next.mode ||
+    prev.padLabel !== next.padLabel ||
+    prev.isToggleActive !== next.isToggleActive
   ) {
     return false;
   }
@@ -243,6 +357,16 @@ export const StreamDeckPad = React.memo(StreamDeckPadComponent, (prev, next) => 
   const prevIsActive = prev.playingState.category === prevCat.category && prev.playingState.isPlaying;
   const nextIsActive = next.playingState.category === nextCat.category && next.playingState.isPlaying;
   if (prevIsActive !== nextIsActive) {
+    return false;
+  }
+
+  // For active loop/continuous pads, currentTime must propagate to update the elapsed display
+  if ((prev.mode === 'loop' || prev.mode === 'continuous') && (prev.isToggleActive || next.isToggleActive)) {
+    if (prev.playingState.currentTime !== next.playingState.currentTime) {
+      return false;
+    }
+  }
+  if (prevIsActive && prev.playingState.currentTime !== next.playingState.currentTime) {
     return false;
   }
 

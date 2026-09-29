@@ -37,6 +37,9 @@ export class FolderScannerService {
           'technical_timeouts',
           'super_spike',
           'monster_block',
+          'ace',
+          'timeout_continuous',
+          'awards',
         ];
 
         if (validCategories.includes(folderName)) {
@@ -57,6 +60,9 @@ export class FolderScannerService {
             technical_timeouts: 60,
             super_spike: 12,
             monster_block: 12,
+            ace: 12,
+            timeout_continuous: 180,
+            awards: 180,
           };
 
           tracks.push({

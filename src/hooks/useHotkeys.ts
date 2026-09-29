@@ -4,9 +4,12 @@ interface HotkeyHandlers {
   onPointIntro: () => void;
   onSuperSpike: () => void;
   onMonsterBlock: () => void;
+  onAce: () => void;
   onTechnicalTimeout: () => void;
   onPresentationPlay: () => void;
   onPresentationTransition: () => void;
+  onToggleTimeoutContinuous: () => void;
+  onToggleAwardsLoop: () => void;
   onEmergencyStop: () => void;
 }
 
@@ -42,6 +45,10 @@ export function useHotkeys(handlers: HotkeyHandlers) {
           event.preventDefault();
           handlersRef.current.onTechnicalTimeout();
           break;
+        case 'KeyR':
+          event.preventDefault();
+          handlersRef.current.onAce();
+          break;
         case 'KeyP':
           event.preventDefault();
           handlersRef.current.onPresentationPlay();
@@ -49,6 +56,14 @@ export function useHotkeys(handlers: HotkeyHandlers) {
         case 'KeyT':
           event.preventDefault();
           handlersRef.current.onPresentationTransition();
+          break;
+        case 'Digit1':
+          event.preventDefault();
+          handlersRef.current.onToggleTimeoutContinuous();
+          break;
+        case 'KeyA':
+          event.preventDefault();
+          handlersRef.current.onToggleAwardsLoop();
           break;
         case 'Escape':
         case 'KeyS':

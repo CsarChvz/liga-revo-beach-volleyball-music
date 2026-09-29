@@ -1,4 +1,4 @@
-export type PlaylistCategory = 'presentation' | 'point_intros' | 'technical_timeouts' | 'super_spike' | 'monster_block';
+export type PlaylistCategory = 'presentation' | 'point_intros' | 'technical_timeouts' | 'super_spike' | 'monster_block' | 'timeout_continuous' | 'awards' | 'ace';
 
 export type SourceType = 'local' | 'synthetic';
 

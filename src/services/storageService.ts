@@ -40,6 +40,27 @@ export const INITIAL_PLAYLISTS: PlaylistMap = {
     playMode: 'sequential',
     tracks: [],
   },
+  ace: {
+    category: 'ace',
+    name: '6. Ace Jingles',
+    currentIndex: 0,
+    playMode: 'sequential',
+    tracks: [],
+  },
+  timeout_continuous: {
+    category: 'timeout_continuous',
+    name: '7. Tiempo Fuera (Playlist Continua)',
+    currentIndex: 0,
+    playMode: 'sequential',
+    tracks: [],
+  },
+  awards: {
+    category: 'awards',
+    name: '8. Premiación (Bucle Infinito)',
+    currentIndex: 0,
+    playMode: 'sequential',
+    tracks: [],
+  },
 };
 
 export class StorageService {

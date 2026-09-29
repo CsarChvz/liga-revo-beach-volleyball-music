@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Keyboard, Zap, Flame, Timer, Radio, AlertOctagon } from 'lucide-react';
+import { X, Keyboard, Zap, Flame, Timer, Radio, AlertOctagon, Repeat, Infinity as InfinityIcon } from 'lucide-react';
 
 interface HotkeyGuideModalProps {
   isOpen: boolean;
@@ -11,11 +11,46 @@ export const HotkeyGuideModal: React.FC<HotkeyGuideModalProps> = ({ isOpen, onCl
 
   const hotkeys = [
     {
+      key: 'E',
+      icon: <Timer className="w-5 h-5 text-green-400" />,
+      title: 'TECHNICAL TIME-OUT (1 Minuto)',
+      desc: 'Música de animación (La Macarena). 50s continuo + 10s fade-out automático (0% al min 1).',
+      badge: 'Tiempo Fuera',
+    },
+    {
+      key: 'P',
+      icon: <Radio className="w-5 h-5 text-sky-400" />,
+      title: 'INTRO (Presentación / Calentamiento)',
+      desc: 'Inicia música ambiental pre-partido.',
+      badge: 'Pre-Partido',
+    },
+    {
       key: 'Espacio',
-      icon: <Flame className="w-5 h-5 text-amber-400" />,
-      title: 'Siguiente Entrepunto (12s)',
+      icon: <Flame className="w-5 h-5 text-orange-400" />,
+      title: 'BREAKS (Siguiente Entrepunto, 12s)',
       desc: 'Dispara canción festiva. 9s continuo + 3s fade-out automático (0% en segundo 12).',
       badge: 'Frecuente',
+    },
+    {
+      key: '1',
+      icon: <Repeat className="w-5 h-5 text-purple-400" />,
+      title: 'TIME-OUT (Reproducción Continua)',
+      desc: 'Activa/desactiva la reproducción continua de toda la playlist, avanzando sola pista a pista.',
+      badge: 'Toggle',
+    },
+    {
+      key: 'A',
+      icon: <InfinityIcon className="w-5 h-5 text-emerald-400" />,
+      title: 'AWARDS (Bucle Infinito)',
+      desc: 'Activa/desactiva el bucle infinito de la pista de premiación activa, con cronómetro de tiempo transcurrido.',
+      badge: 'Toggle',
+    },
+    {
+      key: 'T',
+      icon: <Radio className="w-5 h-5 text-amber-400" />,
+      title: 'Transición a Juego',
+      desc: 'Aplica un fade-out de 3s a la música de presentación y detiene el audio.',
+      badge: 'Inicio Partido',
     },
     {
       key: 'Q',
@@ -32,25 +67,11 @@ export const HotkeyGuideModal: React.FC<HotkeyGuideModalProps> = ({ isOpen, onCl
       badge: 'Prioridad Alta',
     },
     {
-      key: 'E',
-      icon: <Timer className="w-5 h-5 text-emerald-400" />,
-      title: 'Tiempo Técnico (1 Minuto)',
-      desc: 'Música de animación (La Macarena). 50s continuo + 10s fade-out automático (0% al min 1).',
-      badge: 'Tiempo Fuera',
-    },
-    {
-      key: 'P',
-      icon: <Radio className="w-5 h-5 text-sky-400" />,
-      title: 'Play Presentación / Calentamiento',
-      desc: 'Inicia música ambiental pre-partido.',
-      badge: 'Pre-Partido',
-    },
-    {
-      key: 'T',
-      icon: <Radio className="w-5 h-5 text-amber-400" />,
-      title: 'Transición a Juego',
-      desc: 'Aplica un fade-out de 3s a la música de presentación y detiene el audio.',
-      badge: 'Inicio Partido',
+      key: 'R',
+      icon: <Zap className="w-5 h-5 text-amber-400" />,
+      title: 'Jingle ACE',
+      desc: 'Saque de ace. Atenúa automáticamente la música base y dispara el efecto.',
+      badge: 'Prioridad Alta',
     },
     {
       key: 'Esc / S',

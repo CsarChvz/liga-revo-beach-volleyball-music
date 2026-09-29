@@ -15,6 +15,7 @@ export class AudioEngineService {
   private progressInterval: number | null = null;
 
   private audioPool: Map<string, HTMLAudioElement> = new Map();
+  private naturalEndCallback: ((category: PlaylistCategory) => void) | null = null;
 
   // State
   private state: PlayingState = {
@@ -67,6 +68,14 @@ export class AudioEngineService {
 
   public getMasterVolume(): number {
     return this.masterVolume;
+  }
+
+  /**
+   * Registers a callback fired when a track ends naturally (not via emergencyStop/user action).
+   * Used to auto-advance continuous playlists (e.g. TIME-OUT) without the engine knowing playlist contents.
+   */
+  public setNaturalEndCallback(cb: ((category: PlaylistCategory) => void) | null): void {
+    this.naturalEndCallback = cb;
   }
 
   public getCurrentState(): PlayingState {
@@ -145,7 +154,7 @@ export class AudioEngineService {
     this.state.currentTime = 0;
     this.state.isFading = false;
     this.state.fadeTimeRemaining = 0;
-    this.state.jingleActive = track.category === 'super_spike' || track.category === 'monster_block';
+    this.state.jingleActive = track.category === 'super_spike' || track.category === 'monster_block' || track.category === 'ace';
 
     const categoryDurations: Record<PlaylistCategory, number> = {
       presentation: track.duration || 180,
@@ -153,13 +162,16 @@ export class AudioEngineService {
       technical_timeouts: 60,
       super_spike: 12,
       monster_block: 12,
+      ace: 12,
+      timeout_continuous: track.duration || 180,
+      awards: Infinity,
     };
 
     this.state.totalDuration = categoryDurations[track.category] || 12;
 
     // Launch Audio Provider (Local HTML5 Audio or Synthetic Fallback)
     if (track.sourceType === 'local' && track.url) {
-      this.playLocalAudio(track.url);
+      this.playLocalAudio(track.url, track.category === 'awards');
     } else {
       this.playSyntheticTrack(track);
     }
@@ -173,11 +185,12 @@ export class AudioEngineService {
       this.notify();
     }, 250);
 
-    // Apply Specific Module Automation (Point Intros, Super Spike, Monster Block: 12s; Technical Timeout: 60s)
+    // Apply Specific Module Automation (Point Intros, Super Spike, Monster Block, Ace: 12s; Technical Timeout: 60s)
     if (
       track.category === 'point_intros' ||
       track.category === 'super_spike' ||
-      track.category === 'monster_block'
+      track.category === 'monster_block' ||
+      track.category === 'ace'
     ) {
       // 9s play at 100% volume + 3s fade out -> stop at 12s
       this.autoFadeTimer = window.setTimeout(() => {
@@ -196,7 +209,7 @@ export class AudioEngineService {
   /**
    * HTML5 Audio Player (Local MP3/WAV with Instant Cache Reuse)
    */
-  private playLocalAudio(url: string): void {
+  private playLocalAudio(url: string, loop: boolean = false): void {
     let audio = this.audioPool.get(url);
     if (!audio) {
       audio = new Audio(url);
@@ -210,9 +223,14 @@ export class AudioEngineService {
       }
     }
     audio.volume = this.masterVolume;
+    audio.loop = loop;
     this.currentHtmlAudio = audio;
     audio.onended = () => {
+      const endedCategory = this.state.category;
       this.emergencyStop();
+      if (endedCategory && this.naturalEndCallback) {
+        this.naturalEndCallback(endedCategory);
+      }
     };
     audio.play().catch((err) => console.warn('HTML5 Audio playback error:', err));
   }

@@ -11,6 +11,11 @@ export function useAudioPlayer() {
   const playlistsRef = useRef<PlaylistMap>(playlists);
   playlistsRef.current = playlists;
 
+  // 'none' | 'timeout_continuous' (auto-advance whole playlist) | 'awards' (infinite loop of active track)
+  const [specialMode, setSpecialMode] = useState<'none' | 'timeout_continuous' | 'awards'>('none');
+  const specialModeRef = useRef(specialMode);
+  specialModeRef.current = specialMode;
+
   // Pre-load active track URLs into audioEngine pool for 0ms latency
   const preloadActiveTracks = useCallback((map: PlaylistMap) => {
     (Object.keys(map) as PlaylistCategory[]).forEach((cat) => {
@@ -57,6 +62,11 @@ export function useAudioPlayer() {
    * STABLE REFERENCE: Uses playlistsRef so functions never change across renders!
    */
   const playCategoryPlaylist = useCallback((category: PlaylistCategory) => {
+    // Triggering any other category cancels an active continuous/loop toggle mode
+    if (category !== 'timeout_continuous' && category !== 'awards' && specialModeRef.current !== 'none') {
+      setSpecialMode('none');
+    }
+
     const pl = playlistsRef.current[category];
     if (!pl || pl.tracks.length === 0) return;
 
@@ -92,6 +102,16 @@ export function useAudioPlayer() {
       return updated;
     });
   }, []);
+
+  // Auto-advance the continuous TIME-OUT playlist whenever a track ends naturally
+  useEffect(() => {
+    audioEngine.setNaturalEndCallback((category) => {
+      if (category === 'timeout_continuous' && specialModeRef.current === 'timeout_continuous') {
+        playCategoryPlaylist('timeout_continuous');
+      }
+    });
+    return () => audioEngine.setNaturalEndCallback(null);
+  }, [playCategoryPlaylist]);
 
   const selectNextTrackIndex = useCallback((category: PlaylistCategory, index: number) => {
     setPlaylists((prev) => {
@@ -149,6 +169,10 @@ export function useAudioPlayer() {
     playCategoryPlaylist('monster_block');
   }, [playCategoryPlaylist]);
 
+  const playAce = useCallback(() => {
+    playCategoryPlaylist('ace');
+  }, [playCategoryPlaylist]);
+
   const playTechnicalTimeout = useCallback(() => {
     playCategoryPlaylist('technical_timeouts');
   }, [playCategoryPlaylist]);
@@ -158,12 +182,36 @@ export function useAudioPlayer() {
   }, [playCategoryPlaylist]);
 
   const transitionOutPresentation = useCallback(() => {
+    setSpecialMode('none');
     audioEngine.transitionOutPresentation(3000);
   }, []);
 
   const emergencyStop = useCallback(() => {
+    setSpecialMode('none');
     audioEngine.emergencyStop();
   }, []);
+
+  // Toggle ON/OFF: continuously auto-advances through the whole 'timeout_continuous' playlist
+  const toggleTimeoutContinuous = useCallback(() => {
+    if (specialModeRef.current === 'timeout_continuous') {
+      setSpecialMode('none');
+      audioEngine.emergencyStop();
+    } else {
+      setSpecialMode('timeout_continuous');
+      playCategoryPlaylist('timeout_continuous');
+    }
+  }, [playCategoryPlaylist]);
+
+  // Toggle ON/OFF: infinite loop of the active 'awards' track
+  const toggleAwardsLoop = useCallback(() => {
+    if (specialModeRef.current === 'awards') {
+      setSpecialMode('none');
+      audioEngine.emergencyStop();
+    } else {
+      setSpecialMode('awards');
+      playCategoryPlaylist('awards');
+    }
+  }, [playCategoryPlaylist]);
 
   const addTrackToCategory = useCallback((newTrack: AudioTrack, fileObject?: File) => {
     setPlaylists((prev) => {
@@ -230,11 +278,15 @@ export function useAudioPlayer() {
     playNextPointIntro,
     playSuperSpike,
     playMonsterBlock,
+    playAce,
     playTechnicalTimeout,
     playPresentation,
     transitionOutPresentation,
     emergencyStop,
     addTrackToCategory,
     removeTrackFromCategory,
+    specialMode,
+    toggleTimeoutContinuous,
+    toggleAwardsLoop,
   };
 }
