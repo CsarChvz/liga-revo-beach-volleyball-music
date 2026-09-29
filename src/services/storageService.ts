@@ -73,8 +73,8 @@ export class StorageService {
     try {
       const trackMap: Record<string, AudioTrack> = {};
 
-      // 1. Scan physical files placed in public/audio/ subfolders
-      const scannedFolderTracks = FolderScannerService.scanAudioFolders();
+      // 1. Scan physical files placed in public/audio/ subfolders (via manifest fetch)
+      const scannedFolderTracks = await FolderScannerService.scanAudioFolders();
       scannedFolderTracks.forEach((t) => {
         trackMap[t.id] = t;
       });
@@ -140,15 +140,13 @@ export class StorageService {
     return result;
   }
 
+  /**
+   * Immediate initial state (no tracks yet — folder scanning is async now that it
+   * fetches a manifest instead of an eager import.meta.glob). loadPlaylistsAsync
+   * hydrates the real tracks moments later.
+   */
   public static loadPlaylistsSync(): PlaylistMap {
-    const scanned = FolderScannerService.scanAudioFolders();
-    const result: PlaylistMap = JSON.parse(JSON.stringify(INITIAL_PLAYLISTS));
-    scanned.forEach((t) => {
-      if (result[t.category]) {
-        result[t.category].tracks.push(t);
-      }
-    });
-    return result;
+    return JSON.parse(JSON.stringify(INITIAL_PLAYLISTS));
   }
 
   public static savePlaylists(playlists: PlaylistMap): void {

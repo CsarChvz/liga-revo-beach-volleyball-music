@@ -5,7 +5,7 @@ import { Header } from './components/Header';
 import { StreamDeckPad } from './components/StreamDeckPad';
 import { PlaylistManagerModal } from './components/PlaylistManagerModal';
 import { HotkeyGuideModal } from './components/HotkeyGuideModal';
-import { ShieldCheck, Square } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 export function App() {
   const {
@@ -77,29 +77,29 @@ export function App() {
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <h2 className="text-lg font-black text-white tracking-wider uppercase flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-              CONSOLA VOLLEY STREAM DECK (5 BOTONES PRINCIPALES)
+              CONSOLA VOLLEY STREAM DECK (8 BOTONES)
             </h2>
             <span className="text-xs font-mono font-bold bg-slate-950 text-slate-400 px-3 py-1 rounded-lg border border-slate-800">
               CERO SUPERPOSICIÓN DE AUDIO
             </span>
           </div>
 
-          {/* STREAM DECK KEYPAD GRID: 2 FILAS x 3 COLUMNAS */}
+          {/* STREAM DECK KEYPAD GRID: 8 BOTONES */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {/* Pad 1: TECHNICAL TIME-OUT */}
+            {/* Pad 1: TIME-OUT (Reproducción Continua, Toggle ON/OFF) */}
             <StreamDeckPad
-              categoryState={playlists.technical_timeouts}
+              categoryState={playlists.timeout_continuous}
               playingState={playingState}
-              hotkeyLabel="E"
-              padTheme="green"
-              padLabel="TECHNICAL TIME-OUT"
-              mode="trigger"
-              onTriggerPlay={playTechnicalTimeout}
+              hotkeyLabel="1"
+              padTheme="purple"
+              padLabel="TIME-OUT"
+              mode="continuous"
+              isToggleActive={specialMode === 'timeout_continuous'}
+              onTriggerPlay={toggleTimeoutContinuous}
               onSelectTrackIndex={selectNextTrackIndex}
               onReorderTrack={reorderTracks}
               onRemoveTrack={removeTrackFromCategory}
-              subtitleInfo="50s Play + 10s Fade Auto"
             />
 
             {/* Pad 2: INTRO (Presentación & Calentamiento) */}
@@ -117,7 +117,22 @@ export function App() {
               subtitleInfo="Música Continua Pre-Partido"
             />
 
-            {/* Pad 3: BREAKS (Entrepuntos 12s) */}
+            {/* Pad 3: TECHNICAL TIME-OUT */}
+            <StreamDeckPad
+              categoryState={playlists.technical_timeouts}
+              playingState={playingState}
+              hotkeyLabel="E"
+              padTheme="green"
+              padLabel="TECHNICAL TIME-OUT"
+              mode="trigger"
+              onTriggerPlay={playTechnicalTimeout}
+              onSelectTrackIndex={selectNextTrackIndex}
+              onReorderTrack={reorderTracks}
+              onRemoveTrack={removeTrackFromCategory}
+              subtitleInfo="50s Play + 10s Fade Auto"
+            />
+
+            {/* Pad 4: BREAKS (Entrepuntos 12s) */}
             <StreamDeckPad
               categoryState={playlists.point_intros}
               playingState={playingState}
@@ -132,22 +147,52 @@ export function App() {
               subtitleInfo="9s Play + 3s Fade Auto"
             />
 
-            {/* Pad 4: TIME-OUT (Reproducción Continua, Toggle ON/OFF) */}
+            {/* Pad 5: SUPER SPIKE */}
             <StreamDeckPad
-              categoryState={playlists.timeout_continuous}
+              categoryState={playlists.super_spike}
               playingState={playingState}
-              hotkeyLabel="1"
-              padTheme="purple"
-              padLabel="TIME-OUT"
-              mode="continuous"
-              isToggleActive={specialMode === 'timeout_continuous'}
-              onTriggerPlay={toggleTimeoutContinuous}
+              hotkeyLabel="Q"
+              padTheme="rose"
+              padLabel="SUPER SPIKE"
+              mode="trigger"
+              onTriggerPlay={playSuperSpike}
               onSelectTrackIndex={selectNextTrackIndex}
               onReorderTrack={reorderTracks}
               onRemoveTrack={removeTrackFromCategory}
+              subtitleInfo="9s Play + 3s Fade Auto"
             />
 
-            {/* Pad 5: AWARDS (Bucle Infinito, Toggle ON/OFF) */}
+            {/* Pad 6: MONSTER BLOCK */}
+            <StreamDeckPad
+              categoryState={playlists.monster_block}
+              playingState={playingState}
+              hotkeyLabel="W"
+              padTheme="purple"
+              padLabel="MONSTER BLOCK"
+              mode="trigger"
+              onTriggerPlay={playMonsterBlock}
+              onSelectTrackIndex={selectNextTrackIndex}
+              onReorderTrack={reorderTracks}
+              onRemoveTrack={removeTrackFromCategory}
+              subtitleInfo="9s Play + 3s Fade Auto"
+            />
+
+            {/* Pad 7: ACE */}
+            <StreamDeckPad
+              categoryState={playlists.ace}
+              playingState={playingState}
+              hotkeyLabel="R"
+              padTheme="amber"
+              padLabel="ACE"
+              mode="trigger"
+              onTriggerPlay={playAce}
+              onSelectTrackIndex={selectNextTrackIndex}
+              onReorderTrack={reorderTracks}
+              onRemoveTrack={removeTrackFromCategory}
+              subtitleInfo="9s Play + 3s Fade Auto"
+            />
+
+            {/* Pad 8: AWARDS (Bucle Infinito, Toggle ON/OFF) */}
             <StreamDeckPad
               categoryState={playlists.awards}
               playingState={playingState}
@@ -162,63 +207,6 @@ export function App() {
               onRemoveTrack={removeTrackFromCategory}
             />
 
-          </div>
-
-          {/* JINGLES ADICIONALES (OPCIONAL) */}
-          <div className="border-t border-slate-800 pt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-slate-400 tracking-wider uppercase flex items-center gap-2">
-                <Square className="w-3 h-3 text-slate-600" />
-                JINGLES ADICIONALES (OPCIONAL)
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Super Spike */}
-              <StreamDeckPad
-                categoryState={playlists.super_spike}
-                playingState={playingState}
-                hotkeyLabel="Q"
-                padTheme="rose"
-                padLabel="SUPER SPIKE"
-                mode="trigger"
-                onTriggerPlay={playSuperSpike}
-                onSelectTrackIndex={selectNextTrackIndex}
-                onReorderTrack={reorderTracks}
-                onRemoveTrack={removeTrackFromCategory}
-                subtitleInfo="9s Play + 3s Fade Auto"
-              />
-
-              {/* Monster Block */}
-              <StreamDeckPad
-                categoryState={playlists.monster_block}
-                playingState={playingState}
-                hotkeyLabel="W"
-                padTheme="purple"
-                padLabel="MONSTER BLOCK"
-                mode="trigger"
-                onTriggerPlay={playMonsterBlock}
-                onSelectTrackIndex={selectNextTrackIndex}
-                onReorderTrack={reorderTracks}
-                onRemoveTrack={removeTrackFromCategory}
-                subtitleInfo="9s Play + 3s Fade Auto"
-              />
-
-              {/* Ace */}
-              <StreamDeckPad
-                categoryState={playlists.ace}
-                playingState={playingState}
-                hotkeyLabel="R"
-                padTheme="amber"
-                padLabel="ACE"
-                mode="trigger"
-                onTriggerPlay={playAce}
-                onSelectTrackIndex={selectNextTrackIndex}
-                onReorderTrack={reorderTracks}
-                onRemoveTrack={removeTrackFromCategory}
-                subtitleInfo="9s Play + 3s Fade Auto"
-              />
-            </div>
           </div>
 
         </div>
