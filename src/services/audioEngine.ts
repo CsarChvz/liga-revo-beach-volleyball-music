@@ -154,7 +154,7 @@ export class AudioEngineService {
     this.state.currentTime = 0;
     this.state.isFading = false;
     this.state.fadeTimeRemaining = 0;
-    this.state.jingleActive = track.category === 'super_spike' || track.category === 'monster_block' || track.category === 'ace';
+    this.state.jingleActive = track.category === 'super_spike' || track.category === 'monster_block' || track.category === 'fire_ball' || track.category === 'ace';
 
     const categoryDurations: Record<PlaylistCategory, number> = {
       presentation: track.duration || 180,
@@ -162,6 +162,7 @@ export class AudioEngineService {
       technical_timeouts: 60,
       super_spike: 12,
       monster_block: 12,
+      fire_ball: 12,
       ace: 12,
       timeout_continuous: track.duration || 180,
       awards: Infinity,
@@ -185,11 +186,12 @@ export class AudioEngineService {
       this.notify();
     }, 250);
 
-    // Apply Specific Module Automation (Point Intros, Super Spike, Monster Block, Ace: 12s; Technical Timeout: 60s)
+    // Apply Specific Module Automation (Point Intros, Super Spike, Monster Block, Fire Ball, Ace: 12s; Technical Timeout: 60s)
     if (
       track.category === 'point_intros' ||
       track.category === 'super_spike' ||
       track.category === 'monster_block' ||
+      track.category === 'fire_ball' ||
       track.category === 'ace'
     ) {
       // 9s play at 100% volume + 3s fade out -> stop at 12s
@@ -243,6 +245,8 @@ export class AudioEngineService {
       this.syntheticStopFn = syntheticAudio.playSuperSpike();
     } else if (track.syntheticType === 'block_synth' || track.jingleType === 'monster_block') {
       this.syntheticStopFn = syntheticAudio.playMonsterBlock();
+    } else if (track.syntheticType === 'fireball_synth' || track.jingleType === 'fire_ball' || track.category === 'fire_ball') {
+      this.syntheticStopFn = syntheticAudio.playFireBall();
     } else {
       const loop = syntheticAudio.createFiestaLoop(this.state.totalDuration);
       this.syntheticStopFn = loop.stop;

@@ -6,7 +6,7 @@ interface StreamDeckPadProps {
   categoryState: CategoryPlaylistState;
   playingState: PlayingState;
   hotkeyLabel: string;
-  padTheme: 'sky' | 'amber' | 'emerald' | 'rose' | 'purple' | 'green' | 'orange';
+  padTheme: 'sky' | 'amber' | 'emerald' | 'rose' | 'purple' | 'green' | 'orange' | 'red';
   /** 'trigger' = one-shot play & advance (default). 'continuous' = toggle auto-advance whole playlist. 'loop' = toggle infinite loop of active track. */
   mode?: 'trigger' | 'continuous' | 'loop';
   /** Big, prominent label for the pad (e.g. "TECHNICAL TIME-OUT"), shown above the OLED screen. */
@@ -120,6 +120,14 @@ const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
       textAccent: 'text-orange-400',
       badgeBg: 'bg-orange-950 text-orange-300 border-orange-500/30',
       activeBg: 'bg-orange-500/20 text-orange-200 border-orange-500/60',
+    },
+    red: {
+      border: 'border-red-500/50',
+      activeRing: 'ring-4 ring-red-400 shadow-red-500/50',
+      btnBg: 'bg-gradient-to-br from-red-600 to-orange-700 hover:from-red-500 hover:to-orange-600 text-white',
+      textAccent: 'text-red-400',
+      badgeBg: 'bg-red-950 text-red-300 border-red-500/30',
+      activeBg: 'bg-red-500/20 text-red-200 border-red-500/60',
     },
   }[padTheme];
 

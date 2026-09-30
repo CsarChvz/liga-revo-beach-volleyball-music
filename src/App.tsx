@@ -18,6 +18,7 @@ export function App() {
     playNextPointIntro,
     playSuperSpike,
     playMonsterBlock,
+    playFireBall,
     playAce,
     playTechnicalTimeout,
     playPresentation,
@@ -43,6 +44,7 @@ export function App() {
     onPointIntro: playNextPointIntro,
     onSuperSpike: playSuperSpike,
     onMonsterBlock: playMonsterBlock,
+    onFireBall: playFireBall,
     onAce: playAce,
     onTechnicalTimeout: playTechnicalTimeout,
     onPresentationPlay: playPresentation,
@@ -177,7 +179,22 @@ export function App() {
               subtitleInfo="9s Play + 3s Fade Auto"
             />
 
-            {/* Pad 7: ACE */}
+            {/* Pad 7: FIRE BALL */}
+            <StreamDeckPad
+              categoryState={playlists.fire_ball}
+              playingState={playingState}
+              hotkeyLabel="F"
+              padTheme="red"
+              padLabel="FIRE BALL"
+              mode="trigger"
+              onTriggerPlay={playFireBall}
+              onSelectTrackIndex={selectNextTrackIndex}
+              onReorderTrack={reorderTracks}
+              onRemoveTrack={removeTrackFromCategory}
+              subtitleInfo="9s Play + 3s Fade Auto"
+            />
+
+            {/* Pad 8: ACE */}
             <StreamDeckPad
               categoryState={playlists.ace}
               playingState={playingState}
@@ -192,7 +209,7 @@ export function App() {
               subtitleInfo="9s Play + 3s Fade Auto"
             />
 
-            {/* Pad 8: AWARDS (Bucle Infinito, Toggle ON/OFF) */}
+            {/* Pad 9: AWARDS (Bucle Infinito, Toggle ON/OFF) */}
             <StreamDeckPad
               categoryState={playlists.awards}
               playingState={playingState}

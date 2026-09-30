@@ -4,6 +4,7 @@ interface HotkeyHandlers {
   onPointIntro: () => void;
   onSuperSpike: () => void;
   onMonsterBlock: () => void;
+  onFireBall: () => void;
   onAce: () => void;
   onTechnicalTimeout: () => void;
   onPresentationPlay: () => void;
@@ -40,6 +41,10 @@ export function useHotkeys(handlers: HotkeyHandlers) {
         case 'KeyW':
           event.preventDefault();
           handlersRef.current.onMonsterBlock();
+          break;
+        case 'KeyF':
+          event.preventDefault();
+          handlersRef.current.onFireBall();
           break;
         case 'KeyE':
           event.preventDefault();

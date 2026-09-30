@@ -1,4 +1,4 @@
-export type PlaylistCategory = 'presentation' | 'point_intros' | 'technical_timeouts' | 'super_spike' | 'monster_block' | 'timeout_continuous' | 'awards' | 'ace';
+export type PlaylistCategory = 'presentation' | 'point_intros' | 'technical_timeouts' | 'super_spike' | 'monster_block' | 'fire_ball' | 'timeout_continuous' | 'awards' | 'ace';
 
 export type SourceType = 'local' | 'synthetic';
 
@@ -9,10 +9,10 @@ export interface AudioTrack {
   category: PlaylistCategory;
   sourceType: SourceType;
   url?: string;
-  syntheticType?: 'chona_synth' | 'meneadito_synth' | 'macarena_synth' | 'spike_synth' | 'block_synth' | 'intro_synth';
+  syntheticType?: 'chona_synth' | 'meneadito_synth' | 'macarena_synth' | 'spike_synth' | 'block_synth' | 'fireball_synth' | 'intro_synth';
   duration?: number; // seconds
   isBuiltIn?: boolean;
-  jingleType?: 'super_spike' | 'monster_block' | 'custom';
+  jingleType?: 'super_spike' | 'monster_block' | 'fire_ball' | 'custom';
 }
 
 export type PlayMode = 'sequential' | 'random' | 'loop_single';

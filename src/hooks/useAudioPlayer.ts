@@ -169,6 +169,10 @@ export function useAudioPlayer() {
     playCategoryPlaylist('monster_block');
   }, [playCategoryPlaylist]);
 
+  const playFireBall = useCallback(() => {
+    playCategoryPlaylist('fire_ball');
+  }, [playCategoryPlaylist]);
+
   const playAce = useCallback(() => {
     playCategoryPlaylist('ace');
   }, [playCategoryPlaylist]);
@@ -278,6 +282,7 @@ export function useAudioPlayer() {
     playNextPointIntro,
     playSuperSpike,
     playMonsterBlock,
+    playFireBall,
     playAce,
     playTechnicalTimeout,
     playPresentation,

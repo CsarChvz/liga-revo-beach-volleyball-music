@@ -1,8 +1,6 @@
 import type { PlaylistMap, PlaylistCategory, AudioTrack } from '../types/audio';
-import { dbService } from './dbService';
+import { getAllAudioFiles, saveAudioFile, deleteAudioFile } from './supabaseStorageService';
 import { FolderScannerService } from './folderScannerService';
-
-const STORAGE_KEY_PLAYLISTS = 'volley_soundboard_playlists_v3';
 
 export const INITIAL_PLAYLISTS: PlaylistMap = {
   presentation: {
@@ -40,23 +38,30 @@ export const INITIAL_PLAYLISTS: PlaylistMap = {
     playMode: 'sequential',
     tracks: [],
   },
+  fire_ball: {
+    category: 'fire_ball',
+    name: '6. Fire Ball Jingles',
+    currentIndex: 0,
+    playMode: 'sequential',
+    tracks: [],
+  },
   ace: {
     category: 'ace',
-    name: '6. Ace Jingles',
+    name: '7. Ace Jingles',
     currentIndex: 0,
     playMode: 'sequential',
     tracks: [],
   },
   timeout_continuous: {
     category: 'timeout_continuous',
-    name: '7. Tiempo Fuera (Playlist Continua)',
+    name: '8. Tiempo Fuera (Playlist Continua)',
     currentIndex: 0,
     playMode: 'sequential',
     tracks: [],
   },
   awards: {
     category: 'awards',
-    name: '8. Premiación (Bucle Infinito)',
+    name: '9. Premiación (Bucle Infinito)',
     currentIndex: 0,
     playMode: 'sequential',
     tracks: [],
@@ -65,7 +70,8 @@ export const INITIAL_PLAYLISTS: PlaylistMap = {
 
 export class StorageService {
   /**
-   * Load playlists: automatically scans project folders + loads stored files from IndexedDB
+   * Load playlists: scans built-in tracks from Supabase + loads uploaded files from Supabase Storage.
+   * Track ordering and currentIndex are also fetched from Supabase (playlist_state table).
    */
   public static async loadPlaylistsAsync(): Promise<PlaylistMap> {
     const result: PlaylistMap = JSON.parse(JSON.stringify(INITIAL_PLAYLISTS));
@@ -73,51 +79,31 @@ export class StorageService {
     try {
       const trackMap: Record<string, AudioTrack> = {};
 
-      // 1. Scan physical files placed in public/audio/ subfolders (via manifest fetch)
+      // 1. Fetch built-in tracks from Supabase (replaces public/audio/ manifest scan)
       const scannedFolderTracks = await FolderScannerService.scanAudioFolders();
       scannedFolderTracks.forEach((t) => {
         trackMap[t.id] = t;
       });
 
-      // 2. Load saved audio blobs from IndexedDB
-      const dbFiles = await dbService.getAllAudioFiles();
-      dbFiles.forEach((f) => {
-        const objectUrl = URL.createObjectURL(f.blob);
+      // 2. Load uploaded files from Supabase Storage (replaces IndexedDB)
+      const remoteFiles = await getAllAudioFiles();
+      remoteFiles.forEach((f) => {
         trackMap[f.id] = {
           id: f.id,
           title: f.title,
           artist: f.artist,
-          category: f.category as PlaylistCategory,
+          category: f.category,
           sourceType: 'local',
-          url: objectUrl,
+          url: f.url,
           duration: f.duration,
           isBuiltIn: false,
         };
       });
 
-      // 3. Load category track ordering from localStorage
-      const storedJson = localStorage.getItem(STORAGE_KEY_PLAYLISTS);
-      if (storedJson) {
-        const parsedOrder: Record<PlaylistCategory, { currentIndex: number; trackIds: string[] }> = JSON.parse(storedJson);
+      // 3. Restore playlist ordering and currentIndex from Supabase playlist_state
+      await StorageService._applyRemoteOrder(result, trackMap);
 
-        (Object.keys(result) as PlaylistCategory[]).forEach((cat) => {
-          if (parsedOrder[cat]) {
-            result[cat].currentIndex = parsedOrder[cat].currentIndex || 0;
-            const orderedTracks: AudioTrack[] = [];
-
-            // Restore saved sequence order
-            parsedOrder[cat].trackIds.forEach((id) => {
-              if (trackMap[id]) {
-                orderedTracks.push(trackMap[id]);
-                delete trackMap[id];
-              }
-            });
-            result[cat].tracks = orderedTracks;
-          }
-        });
-      }
-
-      // Add all newly scanned or unassigned tracks to their category playlists
+      // Add any tracks not yet assigned to a saved order slot
       Object.values(trackMap).forEach((t) => {
         if (result[t.category]) {
           const exists = result[t.category].tracks.some((existing) => existing.id === t.id);
@@ -141,6 +127,56 @@ export class StorageService {
   }
 
   /**
+   * Apply remote ordering from Supabase:
+   * - tracks table: playlist_order per category
+   * - playlist_state table: current_index per category
+   * Modifies `result` in place and deletes consumed entries from `trackMap`.
+   */
+  private static async _applyRemoteOrder(
+    result: PlaylistMap,
+    trackMap: Record<string, AudioTrack>
+  ): Promise<void> {
+    // Lazy import to avoid top-level Supabase import in tests/SSR
+    const { supabase } = await import('../lib/supabaseClient');
+
+    // Fetch ordered track IDs per category
+    const { data: trackRows } = await supabase
+      .from('tracks')
+      .select('id, category, playlist_order')
+      .order('playlist_order', { ascending: true });
+
+    const orderedByCategory: Record<string, string[]> = {};
+    (trackRows ?? []).forEach((row) => {
+      const cat = row.category as string;
+      if (!orderedByCategory[cat]) orderedByCategory[cat] = [];
+      orderedByCategory[cat].push(row.id as string);
+    });
+
+    // Fetch currentIndex per category
+    const { data: stateRows } = await supabase.from('playlist_state').select('category, current_index');
+    const currentIndexMap: Record<string, number> = {};
+    (stateRows ?? []).forEach((row) => {
+      currentIndexMap[row.category as string] = (row.current_index as number) ?? 0;
+    });
+
+    (Object.keys(result) as PlaylistCategory[]).forEach((cat) => {
+      if (orderedByCategory[cat]) {
+        result[cat].currentIndex = currentIndexMap[cat] ?? 0;
+        const orderedTracks: AudioTrack[] = [];
+        orderedByCategory[cat].forEach((id) => {
+          if (trackMap[id]) {
+            orderedTracks.push(trackMap[id]);
+            delete trackMap[id];
+          }
+        });
+        if (orderedTracks.length > 0) {
+          result[cat].tracks = orderedTracks;
+        }
+      }
+    });
+  }
+
+  /**
    * Immediate initial state (no tracks yet — folder scanning is async now that it
    * fetches a manifest instead of an eager import.meta.glob). loadPlaylistsAsync
    * hydrates the real tracks moments later.
@@ -150,18 +186,37 @@ export class StorageService {
   }
 
   public static savePlaylists(playlists: PlaylistMap): void {
-    try {
-      const orderToSave: Record<string, { currentIndex: number; trackIds: string[] }> = {};
-      (Object.keys(playlists) as PlaylistCategory[]).forEach((cat) => {
-        orderToSave[cat] = {
-          currentIndex: playlists[cat].currentIndex,
-          trackIds: playlists[cat].tracks.map((t) => t.id),
-        };
+    // Fire-and-forget remote save — no await to keep callers synchronous
+    StorageService._savePlaylistsRemote(playlists).catch((e) =>
+      console.warn('Failed to save playlists remotely:', e)
+    );
+  }
+
+  private static async _savePlaylistsRemote(playlists: PlaylistMap): Promise<void> {
+    const { supabase } = await import('../lib/supabaseClient');
+
+    // Batch upsert playlist_order for every track
+    const trackUpdates: { id: string; playlist_order: number }[] = [];
+    (Object.keys(playlists) as PlaylistCategory[]).forEach((cat) => {
+      playlists[cat].tracks.forEach((t, idx) => {
+        trackUpdates.push({ id: t.id, playlist_order: idx });
       });
-      localStorage.setItem(STORAGE_KEY_PLAYLISTS, JSON.stringify(orderToSave));
-    } catch (e) {
-      console.warn('Failed to save playlists order:', e);
+    });
+
+    if (trackUpdates.length > 0) {
+      await supabase.from('tracks').upsert(
+        trackUpdates.map((u) => ({ id: u.id, playlist_order: u.playlist_order })),
+        { onConflict: 'id', ignoreDuplicates: false }
+      );
     }
+
+    // Upsert currentIndex for each category
+    const stateUpdates = (Object.keys(playlists) as PlaylistCategory[]).map((cat) => ({
+      category: cat,
+      current_index: playlists[cat].currentIndex,
+    }));
+
+    await supabase.from('playlist_state').upsert(stateUpdates, { onConflict: 'category' });
   }
 
   public static async saveUploadedFile(
@@ -173,25 +228,17 @@ export class StorageService {
     duration: number
   ): Promise<void> {
     try {
-      await dbService.saveAudioFile({
-        id,
-        blob: file,
-        fileName: file.name,
-        title,
-        artist,
-        category,
-        duration,
-      });
+      await saveAudioFile(id, file, title, artist, category, duration);
     } catch (e) {
-      console.warn('Failed to persist MP3 blob in IndexedDB:', e);
+      console.warn('Failed to upload file to Supabase Storage:', e);
     }
   }
 
   public static async deleteUploadedFile(id: string): Promise<void> {
     try {
-      await dbService.deleteAudioFile(id);
+      await deleteAudioFile(id);
     } catch (e) {
-      console.warn('Failed to delete file from IndexedDB:', e);
+      console.warn('Failed to delete file from Supabase:', e);
     }
   }
 }

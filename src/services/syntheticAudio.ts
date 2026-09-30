@@ -146,6 +146,79 @@ class SyntheticAudioService {
   }
 
   /**
+   * Fire Ball: Explosive fire whoosh + rising pitch impact
+   */
+  public playFireBall(masterGainNode?: GainNode): () => void {
+    const ctx = this.getContext();
+    const output = masterGainNode || ctx.destination;
+    const now = ctx.currentTime;
+    const duration = 2.6;
+
+    // Rising fire whoosh — sawtooth sweep up
+    const whooshOsc = ctx.createOscillator();
+    const whooshGain = ctx.createGain();
+    whooshOsc.type = 'sawtooth';
+    whooshOsc.frequency.setValueAtTime(80, now);
+    whooshOsc.frequency.exponentialRampToValueAtTime(1200, now + 0.5);
+    whooshOsc.frequency.exponentialRampToValueAtTime(200, now + duration);
+
+    whooshGain.gain.setValueAtTime(0.7, now);
+    whooshGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+    whooshOsc.connect(whooshGain);
+    whooshGain.connect(output);
+    whooshOsc.start(now);
+    whooshOsc.stop(now + duration);
+
+    // Impact crack at peak (noise burst at 0.5s)
+    const bufferSize = Math.floor(ctx.sampleRate * 0.3);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const crack = ctx.createBufferSource();
+    crack.buffer = buffer;
+    const crackFilter = ctx.createBiquadFilter();
+    crackFilter.type = 'bandpass';
+    crackFilter.frequency.setValueAtTime(3000, now + 0.5);
+    const crackGain = ctx.createGain();
+    crackGain.gain.setValueAtTime(0, now);
+    crackGain.gain.setValueAtTime(0.9, now + 0.5);
+    crackGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5 + 0.3);
+
+    crack.connect(crackFilter);
+    crackFilter.connect(crackGain);
+    crackGain.connect(output);
+    crack.start(now + 0.5);
+
+    // Fire chord — warm harmonics (D major)
+    const fireFreqs = [146.83, 185.00, 220.00, 293.66]; // D3, F#3, A3, D4
+    fireFreqs.forEach((freq) => {
+      const harmOsc = ctx.createOscillator();
+      const harmGain = ctx.createGain();
+      harmOsc.type = 'triangle';
+      harmOsc.frequency.setValueAtTime(freq, now + 0.3);
+      harmGain.gain.setValueAtTime(0.0, now + 0.3);
+      harmGain.gain.linearRampToValueAtTime(0.35, now + 0.6);
+      harmGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      harmOsc.connect(harmGain);
+      harmGain.connect(output);
+      harmOsc.start(now + 0.3);
+      harmOsc.stop(now + duration);
+    });
+
+    return () => {
+      try {
+        whooshGain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      } catch {
+        // ignore
+      }
+    };
+  }
+
+  /**
    * Upbeat Fiesta Rhythm (Entrepuntos 12s / Cumbia Style synth loop)
    */
   public createFiestaLoop(durationSeconds: number = 12, masterGainNode?: GainNode): { stop: () => void } {
