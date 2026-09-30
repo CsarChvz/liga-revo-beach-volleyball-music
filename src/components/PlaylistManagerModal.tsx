@@ -221,9 +221,10 @@ export const PlaylistManagerModal: React.FC<PlaylistManagerModalProps> = ({
                   <option value="technical_timeouts">3. Tiempos Técnicos & Fuera (1 Minuto con 50s Play + 10s Fade Auto)</option>
                   <option value="super_spike">4. Jingles Super Spike (12s con 9s Play + 3s Fade Auto)</option>
                   <option value="monster_block">5. Jingles Monster Block (12s con 9s Play + 3s Fade Auto)</option>
-                  <option value="ace">6. Jingles Ace (12s con 9s Play + 3s Fade Auto)</option>
-                  <option value="timeout_continuous">7. Tiempo Fuera (Playlist Continua)</option>
-                  <option value="awards">8. Premiación (Bucle Infinito)</option>
+                  <option value="fire_ball">6. Jingles Fire Ball (12s con 9s Play + 3s Fade Auto)</option>
+                  <option value="ace">7. Jingles Ace (12s con 9s Play + 3s Fade Auto)</option>
+                  <option value="timeout_continuous">8. Tiempo Fuera (Playlist Continua)</option>
+                  <option value="awards">9. Premiación (Bucle Infinito)</option>
                 </select>
               </div>
 
@@ -381,9 +382,10 @@ export const PlaylistManagerModal: React.FC<PlaylistManagerModalProps> = ({
                   <option value="technical_timeouts">3. Tiempos Técnicos & Fuera (1 Minuto)</option>
                   <option value="super_spike">4. Jingles Super Spike (Remate)</option>
                   <option value="monster_block">5. Jingles Monster Block (Bloqueo)</option>
-                  <option value="ace">6. Jingles Ace (Saque)</option>
-                  <option value="timeout_continuous">7. Tiempo Fuera (Playlist Continua)</option>
-                  <option value="awards">8. Premiación (Bucle Infinito)</option>
+                  <option value="fire_ball">6. Jingles Fire Ball (Bola de Fuego)</option>
+                  <option value="ace">7. Jingles Ace (Saque)</option>
+                  <option value="timeout_continuous">8. Tiempo Fuera (Playlist Continua)</option>
+                  <option value="awards">9. Premiación (Bucle Infinito)</option>
                 </select>
               </div>
 
@@ -425,15 +427,13 @@ export const PlaylistManagerModal: React.FC<PlaylistManagerModalProps> = ({
                             </div>
                           </div>
 
-                          {!t.isBuiltIn && (
-                            <button
-                              onClick={() => onRemoveTrack(catKey, t.id)}
-                              className="p-1 text-slate-400 hover:text-red-400 rounded transition-colors"
-                              title="Eliminar de esta playlist"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => onRemoveTrack(catKey, t.id)}
+                            className="p-1 text-slate-400 hover:text-red-400 rounded transition-colors"
+                            title="Eliminar de esta playlist"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       ))}
                     </div>

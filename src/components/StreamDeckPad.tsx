@@ -295,15 +295,13 @@ const StreamDeckPadComponent: React.FC<StreamDeckPadProps> = ({
                     <ArrowDown className="w-3 h-3" />
                   </button>
 
-                  {!t.isBuiltIn && (
-                    <button
-                      onClick={() => onRemoveTrack(categoryState.category, t.id)}
-                      className="p-1 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded"
-                      title="Eliminar de playlist"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onRemoveTrack(categoryState.category, t.id)}
+                    className="p-1 hover:bg-red-900/40 text-slate-400 hover:text-red-400 rounded"
+                    title="Eliminar de playlist"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             );
