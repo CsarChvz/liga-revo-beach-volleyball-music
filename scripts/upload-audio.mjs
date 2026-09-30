@@ -47,15 +47,15 @@ function loadEnvLocal() {
 loadEnvLocal();
 
 // ── Configuración ──────────────────────────────────────────────────────────
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
 const BUCKET = 'audio-files';
 const AUDIO_DIR = path.join(process.cwd(), 'public', 'audio');
 const OVERWRITE = process.argv.includes('--overwrite');
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('\n❌  Faltan variables de entorno.');
-  console.error('   Crea .env.local con NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY\n');
+  console.error('   Crea .env.local con VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY\n');
   process.exit(1);
 }
 
